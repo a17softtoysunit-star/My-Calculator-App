@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>My Calculator</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; user-select: none; }
+    body { background: #121212; color: #fff; height: 100vh; overflow: hidden; }
+
+    /* Calculator View */
+    #calc-view { display: flex; flex-direction: column; height: 100vh; justify-content: flex-end; padding: 15px; }
+    .setup-banner { background: #1c2b36; border: 1px solid #007aff; color: #4da3ff; padding: 10px; border-radius: 8px; font-size: 0.85rem; text-align: center; margin-bottom: 10px; display: none; }
+    #display { font-size: 2.8rem; text-align: right; padding: 15px 10px; color: #fff; word-break: break-all; min-height: 75px; }
+    .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+    button.btn { background: #262626; border: none; outline: none; border-radius: 50%; height: 70px; font-size: 1.5rem; color: #fff; display: flex; align-items: center; justify-content: center; }
+    button.btn:active { background: #444; }
+    button.op { background: #ff9f0a; color: #fff; }
+    button.op:active { background: #cc7f08; }
+    button.fn { background: #a5a5a5; color: #000; }
+    button.fn:active { background: #888; }
+
+    /* Vault View */
+    #vault-view { display: none; flex-direction: column; height: 100vh; background: #181818; }
+    .vault-header { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; background: #202020; border-bottom: 1px solid #333; }
+    .vault-header h2 { font-size: 1.15rem; }
+    .header-btns { display: flex; gap: 8px; }
+    .action-head-btn { color: #fff; border: none; padding: 7px 12px; border-radius: 6px; font-weight: 600; font-size: 0.8rem; cursor: pointer; }
+    .pin-btn { background: #444; }
+    .exit-btn { background: #ff3b30; }
+
+    .upload-bar { padding: 14px; display: flex; gap: 10px; background: #242424; }
+    .upload-btn { flex: 1; background: #007aff; color: white; padding: 12px; border-radius: 8px; text-align: center; font-weight: 600; cursor: pointer; display: block; font-size: 0.95rem; }
+    #file-input { display: none; }
+
+    /* Fixed 2-Column Grid */
+    .file-list { 
+      flex: 1; 
+      overflow-y: auto; 
+      padding: 12px; 
+      display: grid; 
+      grid-template-columns: repeat(2, minmax(0, 1fr)); 
+      gap: 12px; 
+      align-content: start;
+    }
+
+    .file-card { 
+      background: #242424; 
+      border-radius: 10px; 
+      padding: 8px; 
+      display: flex; 
+      flex-direction: column; 
+      box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+      overflow: hidden;
+      border: 1px solid #333;
+    }
+
+    /* Fixed Symmetrical Thumbnail */
+    .thumb-wrapper {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      background: #111;
+      border-radius: 6px;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 8px;
+    }
+
+    .thumb-wrapper img, 
+    .thumb-wrapper video { 
+      width: 100%; 
+      height: 100%; 
+      object-fit: cover;
+      display: block;
+    }
+
+    .thumb-wrapper .file-icon {
+      font-size: 2.5rem;
+      color: #888;
+    }
+
+    .file-name { 
+      font-size: 0.78rem; 
+      color: #ccc; 
+      width: 100%; 
+      overflow: hidden; 
+      text-overflow: ellipsis; 
+      white-space: nowrap; 
+      margin-bottom: 8px; 
+      text-align: center; 
+    }
+
+    .card-actions { 
+      display: flex; 
+      gap: 6px; 
+      width: 100%; 
+    }
+    .card-actions button { 
+      flex: 1; 
+      border: none; 
+      padding: 7px 0; 
+      border-radius: 5px; 
+      font-size: 0.75rem; 
+      font-weight: bold; 
+      cursor: pointer; 
+    }
+    .btn-download { background: #34c759; color: white; }
+    .btn-download:active { background: #28a745; }
+    .btn-del { background: #ff453a; color: white; }
+    .btn-del:active { background: #d32f2f; }
+    .empty-msg { grid-column: span 2; text-align: center; color: #666; margin-top: 50px; font-size: 0.95rem; }
+
+    .footer { text-align: center; font-size: 0.75rem; color: #666; padding: 10px 0 2px 0; letter-spacing: 0.5px; }
+  </style>
+</head>
+<body>
+
+  <!-- CALCULATOR VIEW -->
+  <div id="calc-view">
+    <div id="setup-indicator" class="setup-banner"></div>
+    <div id="display">0</div>
+    <div class="grid">
+      <button class="btn fn" onclick="clearCalc()">C</button>
+      <button class="btn fn" onclick="press('(')">(</button>
+      <button class="btn fn" onclick="press(')')">)</button>
+      <button class="btn op" onclick="press('/')">÷</button>
+
+      <button class="btn" onclick="press('7')">7</button>
+      <button class="btn" onclick="press('8')">8</button>
+      <button class="btn" onclick="press('9')">9</button>
+      <button class="btn op" onclick="press('*')">×</button>
+
+      <button class="btn" onclick="press('4')">4</button>
+      <button class="btn" onclick="press('5')">5</button>
+      <button class="btn" onclick="press('6')">6</button>
+      <button class="btn op" onclick="press('-')">−</button>
+
+      <button class="btn" onclick="press('1')">1</button>
+      <button class="btn" onclick="press('2')">2</button>
+      <button class="btn" onclick="press('3')">3</button>
+      <button class="btn op" onclick="press('+')">+</button>
+
+      <button class="btn" onclick="press('0')">0</button>
+      <button class="btn" onclick="press('.')">.</button>
+      <button class="btn fn" onclick="pressBack()">⌫</button>
+      <button class="btn op" onclick="calculate()">=</button>
+    </div>
+    <div class="footer">Developed by Khalid Chaudhary</div>
+  </div>
+
+  <!-- VAULT VIEW -->
+  <div id="vault-view">
+    <div class="vault-header">
+      <h2>Secret Storage</h2>
+      <div class="header-btns">
+        <button class="action-head-btn pin-btn" onclick="resetPinPrompt()">Change PIN</button>
+        <button class="action-head-btn exit-btn" onclick="lockVault()">Lock</button>
+      </div>
+    </div>
+
+    <div class="upload-bar">
+      <label class="upload-btn" for="file-input">+ Hide Photos / Files</label>
+      <input type="file" id="file-input" multiple onchange="handleFileUpload(event)">
+    </div>
+
+    <div class="file-list" id="file-container"></div>
+  </div>
+
+  <script>
+    let currentInput = "";
+    const display = document.getElementById("display");
+    const calcView = document.getElementById("calc-view");
+    const vaultView = document.getElementById("vault-view");
+    const fileContainer = document.getElementById("file-container");
+    const setupBanner = document.getElementById("setup-indicator");
+
+    // PIN State Management
+    let savedPin = localStorage.getItem("vault_pin") || null;
+    let setupStep = savedPin ? 0 : 1;
+    let tempPin = "";
+
+    function updateSetupUI() {
+      if (setupStep === 1) {
+        setupBanner.style.display = "block";
+        setupBanner.innerText = "Setup: Enter 4-digit PIN & press =";
+      } else if (setupStep === 2) {
+        setupBanner.style.display = "block";
+        setupBanner.innerText = "Confirm: Re-enter PIN & press =";
+      } else {
+        setupBanner.style.display = "none";
+      }
+    }
+    updateSetupUI();
+
+    function press(char) {
+      if (currentInput === "0" && char !== ".") currentInput = "";
+      currentInput += char;
+      display.innerText = currentInput;
+    }
+
+    function clearCalc() {
+      currentInput = "";
+      display.innerText = "0";
+    }
+
+    function pressBack() {
+      currentInput = currentInput.slice(0, -1);
+      display.innerText = currentInput || "0";
+    }
+
+    function calculate() {
+      if (setupStep === 1) {
+        if (/^\d{4,6}$/.test(currentInput)) {
+          tempPin = currentInput;
+          setupStep = 2;
+          clearCalc();
+          updateSetupUI();
+        } else {
+          alert("PIN must be 4 to 6 digits.");
+          clearCalc();
+        }
+        return;
+      }
+
+      if (setupStep === 2) {
+        if (currentInput === tempPin) {
+          savedPin = tempPin;
+          localStorage.setItem("vault_pin", savedPin);
+          setupStep = 0;
+          clearCalc();
+          updateSetupUI();
+          alert("PIN set successfully!");
+        } else {
+          alert("PINs did not match. Please try again.");
+          setupStep = 1;
+          tempPin = "";
+          clearCalc();
+          updateSetupUI();
+        }
+        return;
+      }
+
+      if (savedPin && currentInput === savedPin) {
+        clearCalc();
+        openVault();
+        return;
+      }
+
+      try {
+        currentInput = eval(currentInput.replace(/×/g, '*').replace(/÷/g, '/')).toString();
+        display.innerText = currentInput;
+      } catch (e) {
+        display.innerText = "Error";
+        currentInput = "";
+      }
+    }
+
+    function openVault() {
+      calcView.style.display = "none";
+      vaultView.style.display = "flex";
+      renderFiles();
+    }
+
+    function lockVault() {
+      vaultView.style.display = "none";
+      calcView.style.display = "flex";
+      clearCalc();
+    }
+
+    function resetPinPrompt() {
+      const current = prompt("Enter your current PIN:");
+      if (current === savedPin) {
+        lockVault();
+        setupStep = 1;
+        tempPin = "";
+        updateSetupUI();
+      } else {
+        alert("Incorrect current PIN.");
+      }
+    }
+
+    // Storage: IndexedDB
+    let db;
+    const dbReq = indexedDB.open("SecureVaultDB", 1);
+
+    dbReq.onupgradeneeded = (e) => {
+      db = e.target.result;
+      if (!db.objectStoreNames.contains("files")) {
+        db.createObjectStore("files", { keyPath: "id", autoIncrement: true });
+      }
+    };
+
+    dbReq.onsuccess = (e) => {
+      db = e.target.result;
+    };
+
+    function handleFileUpload(event) {
+      const files = event.target.files;
+      if (!files.length) return;
+
+      Array.from(files).forEach(file => {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const item = {
+            name: file.name,
+            type: file.type,
+            size: file.size,
+            data: e.target.result,
+            date: new Date().toLocaleDateString()
+          };
+          saveToDB(item);
+        };
+        reader.readAsDataURL(file);
+      });
+      event.target.value = "";
+    }
+
+    function saveToDB(item) {
+      const tx = db.transaction("files", "readwrite");
+      const store = tx.objectStore("files");
+      store.add(item);
+      tx.oncomplete = () => renderFiles();
+    }
+
+    function renderFiles() {
+      if (!db) return;
+      const tx = db.transaction("files", "readonly");
+      const store = tx.objectStore("files");
+      const req = store.getAll();
+
+      req.onsuccess = () => {
+        const files = req.result;
+        fileContainer.innerHTML = "";
+
+        if (files.length === 0) {
+          fileContainer.innerHTML = `<div class="empty-msg">No hidden files yet.<br>Tap "+ Hide Photos / Files" to add.</div>`;
+          return;
+        }
+
+        files.forEach(f => {
+          const card = document.createElement("div");
+          card.className = "file-card";
+
+          let previewElem = "";
+          if (f.type.startsWith("image/")) {
+            previewElem = `<div class="thumb-wrapper"><img src="${f.data}" alt="preview"></div>`;
+          } else if (f.type.startsWith("video/")) {
+            previewElem = `<div class="thumb-wrapper"><video src="${f.data}"></video></div>`;
+          } else {
+            previewElem = `<div class="thumb-wrapper"><span class="file-icon">📄</span></div>`;
+          }
+
+          card.innerHTML = `
+            ${previewElem}
+            <div class="file-name" title="${f.name}">${f.name}</div>
+            <div class="card-actions">
+              <button class="btn-download" onclick="downloadFile(${f.id})">Export</button>
+              <button class="btn-del" onclick="deleteFile(${f.id})">Delete</button>
+            </div>
+          `;
+          fileContainer.appendChild(card);
+        });
+      };
+    }
+
+    function deleteFile(id) {
+      if (!confirm("Delete this file permanently from vault?")) return;
+      const tx = db.transaction("files", "readwrite");
+      tx.objectStore("files").delete(id);
+      tx.oncomplete = () => renderFiles();
+    }
+
+    function downloadFile(id) {
+      const tx = db.transaction("files", "readonly");
+      const req = tx.objectStore("files").get(id);
+      req.onsuccess = () => {
+        const file = req.result;
+        const a = document.createElement("a");
+        a.href = file.data;
+        a.download = file.name;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      };
+    }
+  </script>
+</body>
+</html>
