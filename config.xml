@@ -8,13 +8,21 @@
     <allow-intent href="http://*/*" />
     <allow-intent href="https://*/*" />
 
+    <!-- Core App Preferences -->
+    <preference name="BackgroundColor" value="0xff121212" />
+    <preference name="AutoHideSplashScreen" value="true" />
+    <preference name="SplashScreenDelay" value="0" />
+    <preference name="FadeSplashScreen" value="false" />
+    <preference name="ShowSplashScreenSpinner" value="false" />
+
     <platform name="android">
         <allow-intent href="market:*" />
         <preference name="AndroidXEnabled" value="true" />
-        <preference name="GradleVersion" value="8.7" />
         <preference name="Orientation" value="portrait" />
+        <preference name="SplashScreenBackgroundColor" value="#121212" />
+        <preference name="AndroidWindowSplashScreenAnimatedIcon" value="res/icon/android/icon-xxhdpi.png" />
         
-        <!-- Auto Generated Icons -->
+        <!-- Icons -->
         <icon density="ldpi" src="res/icon/android/icon-ldpi.png" />
         <icon density="mdpi" src="res/icon/android/icon-mdpi.png" />
         <icon density="hdpi" src="res/icon/android/icon-hdpi.png" />
