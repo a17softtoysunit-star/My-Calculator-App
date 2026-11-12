@@ -22,26 +22,28 @@
 
     /* Vault View */
     #vault-view { display: none; flex-direction: column; height: 100vh; background: #181818; }
-    .vault-header { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; background: #202020; border-bottom: 1px solid #333; }
+    .vault-header { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; background: #202020; border-bottom: 1px solid #333; flex-shrink: 0; }
     .vault-header h2 { font-size: 1.15rem; }
     .header-btns { display: flex; gap: 8px; }
     .action-head-btn { color: #fff; border: none; padding: 7px 12px; border-radius: 6px; font-weight: 600; font-size: 0.8rem; cursor: pointer; }
     .pin-btn { background: #444; }
     .exit-btn { background: #ff3b30; }
 
-    .upload-bar { padding: 14px; display: flex; gap: 10px; background: #242424; }
+    .upload-bar { padding: 12px 14px; display: flex; gap: 10px; background: #242424; flex-shrink: 0; }
     .upload-btn { flex: 1; background: #007aff; color: white; padding: 12px; border-radius: 8px; text-align: center; font-weight: 600; cursor: pointer; display: block; font-size: 0.95rem; }
     #file-input { display: none; }
 
-    /* Fixed 2-Column Grid */
+    /* Scrollable Fixed-Height Card Grid */
     .file-list { 
       flex: 1; 
       overflow-y: auto; 
       padding: 12px; 
       display: grid; 
       grid-template-columns: repeat(2, minmax(0, 1fr)); 
+      grid-auto-rows: max-content;
       gap: 12px; 
       align-content: start;
+      -webkit-overflow-scrolling: touch;
     }
 
     .file-card { 
@@ -51,14 +53,16 @@
       display: flex; 
       flex-direction: column; 
       box-shadow: 0 2px 8px rgba(0,0,0,0.4);
-      overflow: hidden;
       border: 1px solid #333;
+      height: auto;
     }
 
-    /* Fixed Symmetrical Thumbnail */
+    /* Fixed Pixel Height so cards NEVER collapse when multiple files exist */
     .thumb-wrapper {
       width: 100%;
-      aspect-ratio: 1 / 1;
+      height: 140px;
+      min-height: 140px;
+      flex-shrink: 0;
       background: #111;
       border-radius: 6px;
       overflow: hidden;
@@ -66,6 +70,8 @@
       align-items: center;
       justify-content: center;
       margin-bottom: 8px;
+      position: relative;
+      cursor: pointer;
     }
 
     .thumb-wrapper img, 
@@ -76,6 +82,20 @@
       display: block;
     }
 
+    .video-badge {
+      position: absolute;
+      background: rgba(0, 0, 0, 0.65);
+      color: #fff;
+      font-size: 1.4rem;
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    }
+
     .thumb-wrapper .file-icon {
       font-size: 2.5rem;
       color: #888;
@@ -83,24 +103,28 @@
 
     .file-name { 
       font-size: 0.78rem; 
-      color: #ccc; 
+      color: #ddd; 
       width: 100%; 
+      height: 18px;
+      line-height: 18px;
       overflow: hidden; 
       text-overflow: ellipsis; 
       white-space: nowrap; 
       margin-bottom: 8px; 
-      text-align: center; 
+      text-align: center;
+      flex-shrink: 0;
     }
 
     .card-actions { 
       display: flex; 
       gap: 6px; 
       width: 100%; 
+      flex-shrink: 0;
     }
     .card-actions button { 
       flex: 1; 
       border: none; 
-      padding: 7px 0; 
+      padding: 8px 0; 
       border-radius: 5px; 
       font-size: 0.75rem; 
       font-weight: bold; 
@@ -111,6 +135,55 @@
     .btn-del { background: #ff453a; color: white; }
     .btn-del:active { background: #d32f2f; }
     .empty-msg { grid-column: span 2; text-align: center; color: #666; margin-top: 50px; font-size: 0.95rem; }
+
+    /* Full-Screen Preview Modal */
+    #preview-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.96);
+      z-index: 9999;
+      flex-direction: column;
+    }
+    .modal-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 16px;
+      background: #1a1a1a;
+      border-bottom: 1px solid #333;
+    }
+    .modal-title {
+      font-size: 0.9rem;
+      color: #fff;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 75%;
+    }
+    .modal-close {
+      background: #ff3b30;
+      color: #fff;
+      border: none;
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-weight: bold;
+      font-size: 0.85rem;
+    }
+    .modal-body {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 12px;
+      overflow: hidden;
+    }
+    .modal-body img, .modal-body video {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      border-radius: 6px;
+    }
 
     .footer { text-align: center; font-size: 0.75rem; color: #666; padding: 10px 0 2px 0; letter-spacing: 0.5px; }
   </style>
@@ -166,6 +239,15 @@
     </div>
 
     <div class="file-list" id="file-container"></div>
+  </div>
+
+  <!-- FULL-SCREEN VIEWER MODAL -->
+  <div id="preview-modal">
+    <div class="modal-top">
+      <span class="modal-title" id="modal-filename">Preview</span>
+      <button class="modal-close" onclick="closePreview()">Close</button>
+    </div>
+    <div class="modal-body" id="modal-content"></div>
   </div>
 
   <script>
@@ -264,6 +346,7 @@
     }
 
     function lockVault() {
+      closePreview();
       vaultView.style.display = "none";
       calcView.style.display = "flex";
       clearCalc();
@@ -345,11 +428,11 @@
 
           let previewElem = "";
           if (f.type.startsWith("image/")) {
-            previewElem = `<div class="thumb-wrapper"><img src="${f.data}" alt="preview"></div>`;
+            previewElem = `<div class="thumb-wrapper" onclick="openPreview(${f.id})"><img src="${f.data}" loading="lazy" alt="preview"></div>`;
           } else if (f.type.startsWith("video/")) {
-            previewElem = `<div class="thumb-wrapper"><video src="${f.data}"></video></div>`;
+            previewElem = `<div class="thumb-wrapper" onclick="openPreview(${f.id})"><video src="${f.data}" preload="metadata"></video><div class="video-badge">▶</div></div>`;
           } else {
-            previewElem = `<div class="thumb-wrapper"><span class="file-icon">📄</span></div>`;
+            previewElem = `<div class="thumb-wrapper" onclick="openPreview(${f.id})"><span class="file-icon">📄</span></div>`;
           }
 
           card.innerHTML = `
@@ -363,6 +446,39 @@
           fileContainer.appendChild(card);
         });
       };
+    }
+
+    function openPreview(id) {
+      const tx = db.transaction("files", "readonly");
+      const req = tx.objectStore("files").get(id);
+      req.onsuccess = () => {
+        const file = req.result;
+        if (!file) return;
+
+        const modal = document.getElementById("preview-modal");
+        const title = document.getElementById("modal-filename");
+        const content = document.getElementById("modal-content");
+
+        title.innerText = file.name;
+        content.innerHTML = "";
+
+        if (file.type.startsWith("image/")) {
+          content.innerHTML = `<img src="${file.data}" alt="${file.name}">`;
+        } else if (file.type.startsWith("video/")) {
+          content.innerHTML = `<video src="${file.data}" controls autoplay></video>`;
+        } else {
+          content.innerHTML = `<div style="text-align:center;color:#aaa;"><div style="font-size:4rem;margin-bottom:10px;">📄</div><p>${file.name}</p><p style="font-size:0.8rem;margin-top:6px;">Tap Export to open this document</p></div>`;
+        }
+
+        modal.style.display = "flex";
+      };
+    }
+
+    function closePreview() {
+      const modal = document.getElementById("preview-modal");
+      const content = document.getElementById("modal-content");
+      content.innerHTML = "";
+      modal.style.display = "none";
     }
 
     function deleteFile(id) {
